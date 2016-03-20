@@ -23,7 +23,7 @@ func main() {
 	mainLogger := NewLogFunc("main")
 	var (
 		config *WbsConfig
-		err    error
+		err error
 	)
 	if *configFile != "" {
 		config, err = NewWbsConfig(*configFile)
@@ -67,14 +67,25 @@ func main() {
 		for {
 			select {
 			case event := <-watcher.w.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					e := event.String()
-					mainLogger("file modified: %s", e)
+				switch {
+				case event.Op & fsnotify.Remove == fsnotify.Remove:
+					mainLogger("file remove: %s", event.String())
+					if err := watcher.w.Remove(event.Name); err != nil {
+						mainLogger("remove watching error: %s", err.Error())
+					}
+					if err := watcher.w.Add(event.Name); err != nil {
+						mainLogger("remove watching error: %s", err.Error())
+					}
+					fallthrough
+				case event.Op & fsnotify.Write == fsnotify.Write:
+					mainLogger("file modified: %s", event.String())
 					if config.RestartProcess {
 						runner.Stop()
 					}
 					builder.Build()
 					runner.Serve()
+				default:
+					mainLogger("Unhandled event: %s", event.String())
 				}
 			case err := <-watcher.w.Errors:
 				mainLogger("error: %s", err)
