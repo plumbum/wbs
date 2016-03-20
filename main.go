@@ -11,6 +11,8 @@ import (
 
 var shellParser shellwords.Parser
 
+const defaultConfigFile = "wbs.toml"
+
 func init() {
 	shellParser.ParseEnv = true
 	shellParser.ParseBacktick = true
@@ -25,12 +27,18 @@ func main() {
 		config *WbsConfig
 		err error
 	)
+	if *configFile == "" {
+		if _, err := os.Stat(defaultConfigFile); !os.IsNotExist(err) {
+			*configFile = defaultConfigFile
+		}
+	}
 	if *configFile != "" {
 		config, err = NewWbsConfig(*configFile)
 		if err != nil {
 			mainLogger("failed to create config: %s", err)
 			os.Exit(1)
 		}
+		mainLogger("use config file `%s'", *configFile)
 	} else {
 		config = NewWbsDefaultConfig()
 	}
