@@ -21,7 +21,14 @@ func helloWorld(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hello, world!\n")
 }
 
+func currentTime(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Server time: %s\n", time.Now().String())
+}
+
 func main() {
+	log.Print("Start server. Listen at :8080")
+	currentTimeHandler := http.HandlerFunc(currentTime)
+	http.Handle("/", loggingMiddleware(currentTimeHandler))
 	helloWorldHandler := http.HandlerFunc(helloWorld)
 	http.Handle("/hello", loggingMiddleware(helloWorldHandler))
 	if err := http.ListenAndServe(":8080", nil); err != nil {
